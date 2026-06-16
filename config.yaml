@@ -1,0 +1,19 @@
+model_list:
+  - model_name: mystery
+    litellm_params:
+      model: openrouter/nvidia/nemotron-3-ultra-550b-a55b:free
+      api_key: os.environ/OPENROUTER_API_KEY
+
+guardrails:
+  - guardrail_name: "lakera-guard"
+    litellm_params:
+      guardrail: lakera_v2
+      mode: "during_call"
+      api_key: os.environ/LAKERA_API_KEY
+      api_base: os.environ/LAKERA_API_BASE
+  - guardrail_name: "lakera-pre-guard"
+    litellm_params:
+      guardrail: lakera_v2
+      mode: "pre_call"
+      api_key: os.environ/LAKERA_API_KEY
+      api_base: os.environ/LAKERA_API_BASE

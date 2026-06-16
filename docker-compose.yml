@@ -17,7 +17,13 @@ services:
     depends_on:
       litellm-db:
         condition: service_healthy
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+    command: ["--config", "/app/config.yaml", "--detailed_debug"]
     environment:
       LITELLM_MASTER_KEY: "AdminIzK1ng"
       DATABASE_URL: "postgresql://litellm:litellm@litellm-db:5432/litellm"
+      LAKERA_API_KEY: "1234updateme"
+      LAKERA_API_BASE: "https://api.lakera.ai"
+      OPENROUTER_API_KEY: "1234updateme"
       # OPENAI_API_KEY: "${OPENAI_API_KEY}"   # or whatever provider key you need
