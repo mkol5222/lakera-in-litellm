@@ -1,0 +1,23 @@
+services:
+  litellm-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: litellm
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: litellm
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U litellm -d litellm"]
+      interval: 5s
+      retries: 5
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    ports:
+      - "4000:4000"
+    depends_on:
+      litellm-db:
+        condition: service_healthy
+    environment:
+      LITELLM_MASTER_KEY: "AdminIzK1ng"
+      DATABASE_URL: "postgresql://litellm:litellm@litellm-db:5432/litellm"
+      # OPENAI_API_KEY: "${OPENAI_API_KEY}"   # or whatever provider key you need
