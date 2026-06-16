@@ -11,7 +11,9 @@ docker compose up -d --force-recreate
 # monitor
  docker compose logs -ft
 
- # visit http://localhost:4000 to see the Litellm UI, where you can use the playground witg model mystery and the guardrails lakera-during-guard and lakera-pre-guard, which are powered by Lakera Guard.
+ # visit http://localhost:4000 to see the Litellm UI, where you can use 
+ # the playground with model "mystery" 
+ # and the guardrails lakera-during-guard and lakera-pre-guard
 
  # test call
  curl -i http://localhost:4000/v1/chat/completions \
