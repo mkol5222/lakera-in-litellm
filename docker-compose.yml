@@ -11,7 +11,7 @@ services:
       retries: 5
 
   litellm:
-    image: ghcr.io/berriai/litellm:main-latest
+    image: litellm/litellm:main-latest
     ports:
       - "4000:4000"
     depends_on:
@@ -23,6 +23,10 @@ services:
     environment:
       LITELLM_MASTER_KEY: "AdminIzK1ng"
       DATABASE_URL: "postgresql://litellm:litellm@litellm-db:5432/litellm"
+      # Uncomment for GitHub Codespaces so the admin UI generates correct links.
+      # The $CODESPACE_NAME env var from the host is substituted automatically:
+      PROXY_BASE_URL: "https://${CODESPACE_NAME}-4000.preview.app.github.dev"
+      # For custom domains, set the full URL: https://proxy.example.com
       LAKERA_API_KEY: ${LAKERA_API_KEY}
       LAKERA_API_BASE: "https://api.lakera.ai"
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
