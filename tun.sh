@@ -10,6 +10,53 @@ max_readiness_retries=30                  # ~60s timeout for readiness check
 : "${CHECK:=✅}"; : "${GLOBE:=🌍}"; : "${CLOCK:=⏳}"; : "${INFO:=ℹ️}"
 : "${BOLD:=}"; : "${RESET:=}"
 
+# ---- Set DNS to Cloudflare 1.1.1.1 (for Ubuntu LTS containers) ----
+set_dns() {
+    # Check if 1.1.1.1 is already configured
+    if grep -q '^nameserver 1\.1\.1\.1$' /etc/resolv.conf 2>/dev/null; then
+        echo -e "  ${CHECK} DNS already set to 1.1.1.1"
+        return 0
+    fi
+
+    echo -e "  ${TOOL} Setting DNS to 1.1.1.1..."
+
+    # Method 1: systemd-resolved (modern Ubuntu)
+    if command -v resolvectl &> /dev/null; then
+        # Find the default interface
+        iface=$(resolvectl status 2>/dev/null | grep -m1 'Link' | awk '{print $2}' | tr -d ':')
+        iface="${iface:-$(ip -o route get 1.1.1.1 2>/dev/null | sed 's/.*dev \([^ ]*\).*/\1/')}"
+        if [ -n "$iface" ]; then
+            sudo resolvectl dns "$iface" 1.1.1.1 2>/dev/null && {
+                echo -e "  ${CHECK} DNS set to 1.1.1.1 (via resolvectl)"
+                return 0
+            }
+        fi
+    fi
+
+    # Method 2: Direct write (works with special mounts that block sed -i)
+    echo "nameserver 1.1.1.1" | sudo tee /etc/resolv.conf > /dev/null && {
+        echo -e "  ${CHECK} DNS set to 1.1.1.1"
+        return 0
+    }
+
+    echo -e "  ${CROSS} Failed to set DNS"
+    return 1
+}
+set_dns
+
+# ---- Disable IPv6 (container has no IPv6 connectivity) ----
+disable_ipv6() {
+    if [ -f /proc/sys/net/ipv6/conf/all/disable_ipv6 ] && [ "$(cat /proc/sys/net/ipv6/conf/all/disable_ipv6)" = "0" ]; then
+        echo -e "  ${TOOL} Disabling IPv6 (not reachable from this container)..."
+        echo 1 | sudo tee /proc/sys/net/ipv6/conf/all/disable_ipv6 > /dev/null
+        echo 1 | sudo tee /proc/sys/net/ipv6/conf/default/disable_ipv6 > /dev/null
+        echo -e "  ${CHECK} IPv6 disabled"
+    else
+        echo -e "  ${CHECK} IPv6 already disabled"
+    fi
+}
+disable_ipv6
+
 # ---- Ensure tmux is installed ----
 install_tmux() {
     echo -e "  ${TOOL} tmux not found — installing..."
@@ -113,7 +160,10 @@ for i in $(seq 1 "$max_readiness_retries"); do
     fi
 
     # Check HTTP 200 (this implicitly verifies DNS too)
-    http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "$tunnel_url/" 2>/dev/null)
+    # (-4 forces IPv4; container has no IPv6 connectivity)
+    echo curl -4 -v --max-time 5 "$tunnel_url/"
+    curl -4 -v --max-time 5 "$tunnel_url/"
+    http_code=$(curl -s -4 -o /dev/null -w "%{http_code}" --max-time 5 "$tunnel_url/" 2>/dev/null)
     if [ "$http_code" = "200" ]; then
         ready=true
         break
