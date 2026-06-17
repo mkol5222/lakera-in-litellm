@@ -85,7 +85,7 @@ for i in $(seq 1 30); do
         tmux capture-pane -t tun -p -S -
         exit 1
     fi
-    tunnel_url=$(tmux capture-pane -t tun -p -S - | grep -oE 'https://[a-zA-Z0-9.-]+\.trycloudflare\.com' | head -1)
+    tunnel_url=$(tmux capture-pane -t tun -p -J -S - | grep -oE 'https://[a-zA-Z0-9.-]+\.trycloudflare\.com' | head -1)
     if [ -n "$tunnel_url" ]; then
         break
     fi
