@@ -30,4 +30,6 @@ services:
       LAKERA_API_KEY: ${LAKERA_API_KEY}
       LAKERA_API_BASE: "https://api.lakera.ai"
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      DOCS_URL: "/docs"              # Set docs to a different path
+      ROOT_REDIRECT_URL: "/ui"       # Redirect root path (/) to /ui
       # OPENAI_API_KEY: "${OPENAI_API_KEY}"   # or whatever provider key you need
