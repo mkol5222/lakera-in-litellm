@@ -6,15 +6,18 @@
    export OPENROUTER_API_KEY="sk-or-v1-ed0de..."
    export LAKERA_API_KEY="e222..."
    export PROXY_BASE_URL="https://${CODESPACE_NAME}-4000.app.github.dev"
+  export ROOT_REDIRECT_URL="${PROXY_BASE_URL}/ui/"
    # or when not in CodeSpace
-   unset PROXY_BASED_URL
+  unset PROXY_BASE_URL
+  unset ROOT_REDIRECT_URL
  # deliver them to the docker container and restart the service
 docker compose up -d --force-recreate
 
 # monitor
  docker compose logs -ft
 
- # visit http://localhost:4000 to see the Litellm UI, where you can use 
+ # visit ${PROXY_BASE_URL}/ui/ in Codespaces (or http://localhost:4000/ui/ locally)
+ # to see the Litellm UI, where you can use 
  # the playground with model "mystery" 
  # and the guardrails lakera-during-guard and lakera-pre-guard
 

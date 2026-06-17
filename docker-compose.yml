@@ -23,13 +23,15 @@ services:
     environment:
       LITELLM_MASTER_KEY: "AdminIzK1ng"
       DATABASE_URL: "postgresql://litellm:litellm@litellm-db:5432/litellm"
-      # Uncomment for GitHub Codespaces so the admin UI generates correct links.
-      # The $CODESPACE_NAME env var from the host is substituted automatically:
-      PROXY_BASE_URL: ${PROXY_BASE_URL}
+      # Canonical external base URL for login/onboarding links.
+      # In Codespaces, this can be auto-derived from $CODESPACE_NAME.
+      PROXY_BASE_URL: ${PROXY_BASE_URL:-https://${CODESPACE_NAME}-4000.app.github.dev}
+      # Redirect root path (/) straight to the external UI URL.
+      # Keep this absolute to avoid localhost hops in proxied environments.
+      ROOT_REDIRECT_URL: ${ROOT_REDIRECT_URL:-https://${CODESPACE_NAME}-4000.app.github.dev/ui/}
       # For custom domains, set the full URL: https://proxy.example.com
       LAKERA_API_KEY: ${LAKERA_API_KEY}
       LAKERA_API_BASE: "https://api.lakera.ai"
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
-      DOCS_URL: "/docs"              # Set docs to a different path
-      ROOT_REDIRECT_URL: "/ui"       # Redirect root path (/) to /ui
+      # DOCS_URL: "/docs"              # Set docs to a different path
       # OPENAI_API_KEY: "${OPENAI_API_KEY}"   # or whatever provider key you need
