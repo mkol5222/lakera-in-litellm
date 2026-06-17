@@ -5,20 +5,10 @@
 # real credentials for models and Lakera Guard API
    export OPENROUTER_API_KEY="sk-or-v1-ed0de..."
    export LAKERA_API_KEY="e222..."
-<<<<<<< HEAD
-   export PROXY_BASE_URL="https://${CODESPACE_NAME}-4000.app.github.dev"
-  export ROOT_REDIRECT_URL="${PROXY_BASE_URL}/ui/"
-  export LITELLM_HOSTED_UI="${PROXY_BASE_URL}/ui/"
-   # or when not in CodeSpace
-  unset PROXY_BASE_URL
-  unset ROOT_REDIRECT_URL
-  unset LITELLM_HOSTED_UI
-=======
-
->>>>>>> 3a864cc (tunnel access)
- # deliver them to the docker container and restart the service
+# deliver them to the docker container and restart the service
 docker compose up -d --force-recreate
-# get LiteLLM accessible via
+
+# get LiteLLM accessible via public URL
 ./tun.sh
 
 # monitor
