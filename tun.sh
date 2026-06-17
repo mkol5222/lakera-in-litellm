@@ -1,5 +1,36 @@
 #!/bin/bash
 
+# ---- Config ----
+litellm_docker_port=4000
+: "${cloudflared_log_level:=info}"       # default log level if not set
+max_readiness_retries=30                  # ~60s timeout for readiness check
+
+# ---- Emoji helpers (if not already defined by caller) ----
+: "${TOOL:=🔧}"; : "${CROSS:=❌}"; : "${DOWNLOAD:=📥}"
+: "${CHECK:=✅}"; : "${GLOBE:=🌍}"; : "${CLOCK:=⏳}"; : "${INFO:=ℹ️}"
+: "${BOLD:=}"; : "${RESET:=}"
+
+# ---- Ensure tmux is installed ----
+install_tmux() {
+    echo -e "  ${TOOL} tmux not found — installing..."
+    sudo apt-get update -qq && sudo apt-get install -y -qq tmux
+    echo -e "  ${CHECK} tmux installed successfully."
+}
+
+if command -v tmux &> /dev/null; then
+    echo -e "  ${CHECK} tmux is available."
+else
+    install_tmux
+fi
+
+# ---- Kill existing tmux session 'tun' if present ----
+if tmux has-session -t tun 2>/dev/null; then
+    echo -e "  ${TOOL} Killing existing tmux session 'tun'..."
+    tmux kill-session -t tun
+    sleep 1
+fi
+
+# ---- Install cloudflared if missing ----
 install_cloudflared() {
     echo -e "  ${TOOL} cloudflared not found — installing..."
     os=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -39,36 +70,70 @@ else
     install_cloudflared
 fi
 
-litellm_docker_port=4000
+# ---- Start tunnel inside tmux session 'tun' ----
+echo -e "  ${GLOBE} Starting Cloudflare tunnel in tmux session 'tun'..."
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+tmux new-session -d -s tun "bash -c 'cd \"$script_dir\" && exec $cloudflared_bin tunnel --url http://localhost:$litellm_docker_port --loglevel $cloudflared_log_level'"
 
-echo -e "  ${GLOBE} Starting Cloudflare tunnel..."
-tmp_log=$(mktemp)
-$cloudflared_bin tunnel --url "http://localhost:$litellm_docker_port" --loglevel "$cloudflared_log_level" >"$tmp_log" 2>&1 &
-cloudflared_pid=$!
-
+# ---- Extract tunnel URL from logs ----
 tunnel_url=""
 echo -e "  ${CLOCK} Waiting for tunnel URL..."
 for i in $(seq 1 30); do
-    tunnel_url=$(grep -oE 'https://[a-zA-Z0-9.-]+\.trycloudflare\.com' "$tmp_log" | head -1)
+    # Bail if tmux session died
+    if ! tmux has-session -t tun 2>/dev/null; then
+        echo -e "\n  ${CROSS} tmux session 'tun' died unexpectedly. Logs:"
+        tmux capture-pane -t tun -p -S -
+        exit 1
+    fi
+    tunnel_url=$(tmux capture-pane -t tun -p -S - | grep -oE 'https://[a-zA-Z0-9.-]+\.trycloudflare\.com' | head -1)
     if [ -n "$tunnel_url" ]; then
         break
     fi
     sleep 1
 done
 
+if [ -z "$tunnel_url" ]; then
+    echo -e "\n  ${CROSS} Failed to obtain tunnel URL within 30s. Logs:"
+    tmux capture-pane -t tun -p -S -
+    exit 1
+fi
+
 echo "Tunnel URL: $tunnel_url"
 echo
-sleep 1  # Give the tunnel a moment to start
 
-echo -e "  ${CLOCK} Waiting for tunnel to be ready..."
-# check until tunnel is ready (does not return 502)
-until curl -s -o /dev/null -w "%{http_code}" "$tunnel_url/" | grep -q "200"; do
+# ---- Wait for tunnel readiness (DNS + HTTP 200) ----
+echo -e "  ${CLOCK} Waiting for tunnel to be ready (DNS + HTTP 200)..."
+ready=false
+for i in $(seq 1 "$max_readiness_retries"); do
+    # Check tmux session is alive
+    if ! tmux has-session -t tun 2>/dev/null; then
+        echo -e "\n  ${CROSS} tmux session 'tun' died during readiness check. Logs:"
+        tmux capture-pane -t tun -p -S -
+        exit 1
+    fi
+
+    # Check HTTP 200 (this implicitly verifies DNS too)
+    http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "$tunnel_url/" 2>/dev/null)
+    if [ "$http_code" = "200" ]; then
+        ready=true
+        break
+    fi
     echo -n "."
     sleep 2
 done
-echo
 
 echo
-echo -e "  ${CHECK} Tunnel is ready."
-echo -e "  ${INFO} You can access the Litellm UI at: ${BOLD}${tunnel_url}/ui${RESET}"
-echo
+if [ "$ready" = true ]; then
+    echo -e "  ${CHECK} Tunnel is ready."
+    echo -e "  ${INFO} You can access the Litellm UI at: ${BOLD}${tunnel_url}/ui${RESET}"
+    echo
+    echo -e "  ${INFO} The tunnel is running in tmux session 'tun'."
+    echo -e "  ${INFO}   Attach:  ${BOLD}tmux attach -t tun${RESET}"
+    echo -e "  ${INFO}   Detach:  ${BOLD}Ctrl+B, D${RESET}"
+    echo -e "  ${INFO}   Kill:    ${BOLD}tmux kill-session -t tun${RESET}"
+else
+    echo -e "\n  ${CROSS} Tunnel never became ready after ${max_readiness_retries} retries."
+    echo -e "  ${INFO} Check that litellm is running on port ${litellm_docker_port} and try again."
+    tmux kill-session -t tun 2>/dev/null
+    exit 1
+fi
