@@ -25,7 +25,7 @@ services:
       DATABASE_URL: "postgresql://litellm:litellm@litellm-db:5432/litellm"
       # Uncomment for GitHub Codespaces so the admin UI generates correct links.
       # The $CODESPACE_NAME env var from the host is substituted automatically:
-      PROXY_BASE_URL: "https://${CODESPACE_NAME}-4000.app.github.dev"
+      PROXY_BASE_URL: ${PROXY_BASE_URL}
       # For custom domains, set the full URL: https://proxy.example.com
       LAKERA_API_KEY: ${LAKERA_API_KEY}
       LAKERA_API_BASE: "https://api.lakera.ai"
