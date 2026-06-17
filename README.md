@@ -7,9 +7,11 @@
    export LAKERA_API_KEY="e222..."
    export PROXY_BASE_URL="https://${CODESPACE_NAME}-4000.app.github.dev"
   export ROOT_REDIRECT_URL="${PROXY_BASE_URL}/ui/"
+  export LITELLM_HOSTED_UI="${PROXY_BASE_URL}/ui/"
    # or when not in CodeSpace
   unset PROXY_BASE_URL
   unset ROOT_REDIRECT_URL
+  unset LITELLM_HOSTED_UI
  # deliver them to the docker container and restart the service
 docker compose up -d --force-recreate
 

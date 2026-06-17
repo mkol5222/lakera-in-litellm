@@ -29,6 +29,7 @@ services:
       # Redirect root path (/) straight to the external UI URL.
       # Keep this absolute to avoid localhost hops in proxied environments.
       ROOT_REDIRECT_URL: ${ROOT_REDIRECT_URL:-https://${CODESPACE_NAME}-4000.app.github.dev/ui/}
+      LITELLM_HOSTED_UI: ${LITELLM_HOSTED_UI:-https://${CODESPACE_NAME}-4000.app.github.dev/ui/}
       # For custom domains, set the full URL: https://proxy.example.com
       LAKERA_API_KEY: ${LAKERA_API_KEY}
       LAKERA_API_BASE: "https://api.lakera.ai"
