@@ -6,6 +6,8 @@
    export OPENROUTER_API_KEY="sk-or-v1-ed0de..."
    export LAKERA_API_KEY="e222..."
    export PROXY_BASE_URL="https://${CODESPACE_NAME}-4000.app.github.dev"
+   # or when not in CodeSpace
+   unset PROXY_BASED_URL
  # deliver them to the docker container and restart the service
 docker compose up -d --force-recreate
 
