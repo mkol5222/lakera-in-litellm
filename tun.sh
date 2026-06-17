@@ -57,6 +57,18 @@ for i in $(seq 1 30); do
 done
 
 echo "Tunnel URL: $tunnel_url"
-echo -e "  ${CHECK} Cloudflare tunnel is ready."
+echo
+sleep 1  # Give the tunnel a moment to start
+
+echo -e "  ${CLOCK} Waiting for tunnel to be ready..."
+# check until tunnel is ready (does not return 502)
+until curl -s -o /dev/null -w "%{http_code}" "$tunnel_url/" | grep -q "200"; do
+    echo -n "."
+    sleep 2
+done
+echo
+
+echo
+echo -e "  ${CHECK} Tunnel is ready."
 echo -e "  ${INFO} You can access the Litellm UI at: ${BOLD}${tunnel_url}/ui${RESET}"
 echo
